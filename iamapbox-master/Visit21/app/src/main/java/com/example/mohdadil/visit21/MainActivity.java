@@ -41,7 +41,9 @@ import com.mapbox.mapboxsdk.plugins.locationlayer.LocationLayerOptions;
 import com.mapbox.mapboxsdk.plugins.locationlayer.LocationLayerPlugin;
 import com.mapbox.mapboxsdk.style.layers.FillExtrusionLayer;
 import com.mapbox.mapboxsdk.style.layers.FillLayer;
+import com.mapbox.mapboxsdk.style.layers.Layer;
 import com.mapbox.mapboxsdk.style.layers.LineLayer;
+import com.mapbox.mapboxsdk.style.layers.Property;
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource;
 import com.mapbox.turf.TurfJoins;
 
@@ -54,6 +56,8 @@ import static com.mapbox.mapboxsdk.style.expressions.Expression.exponential;
 import static com.mapbox.mapboxsdk.style.expressions.Expression.interpolate;
 import static com.mapbox.mapboxsdk.style.expressions.Expression.stop;
 import static com.mapbox.mapboxsdk.style.expressions.Expression.zoom;
+import static com.mapbox.mapboxsdk.style.layers.Property.NONE;
+import static com.mapbox.mapboxsdk.style.layers.Property.VISIBLE;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.fillColor;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.fillExtrusionColor;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.fillExtrusionHeight;
@@ -62,6 +66,7 @@ import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.fillOpacity;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.lineColor;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.lineOpacity;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.lineWidth;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.visibility;
 //import com.mapbox.android.core.location.LocationEngineListener;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, PermissionsListener {
@@ -82,8 +87,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private GeoJsonSource indoorBuildingSource;
     private List<List<Point>> boundingBoxList;
     private View levelButtons;
-
-
+    private String currLayer;
+    private Button currButton;
+    Button buttonFifthLevel;
+    Button buttonfourthLevel;
     private IALocationListener mListener = new IALocationListenerSupport() {
 
         @Override
@@ -135,7 +142,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void onMapReady(@NonNull MapboxMap mmapboxMap) {
         MainActivity.this.mapboxMap = mmapboxMap;
 
-        mapboxMap.setStyle(new Style.Builder().fromUrl("mapbox://styles/adil-khot/cjnivv3u029l02sk0f0pwwf19"),
+        mapboxMap.setStyle(new Style.Builder().fromUrl("mapbox://styles/adil-khot/cjs6g8pwo2h021fr1w0wdhaeh"),
                 new Style.OnStyleLoaded() {
                     @Override
                     public void onStyleLoaded(@NonNull Style style) {
@@ -159,10 +166,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                                         if (levelButtons.getVisibility() != View.VISIBLE) {
                                             showLevelButton();
                                         }
-                                    } else {
-                                        if (levelButtons.getVisibility() == View.VISIBLE) {
-                                            hideLevelButton();
-                                        }
                                     }
                                 } else if (levelButtons.getVisibility() == View.VISIBLE) {
                                     hideLevelButton();
@@ -171,8 +174,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                         });
 
                         indoorBuildingSource = new GeoJsonSource(
-                                "indoor-building", loadJsonFromAsset("fourth.geojson"));
+                                "indoor-building", loadJsonFromAsset("fifth.geojson"));
                         style.addSource(indoorBuildingSource);
+                        currLayer="fourth_floor_new";
+                        currButton = buttonfourthLevel;
+                        ActivateButton(currButton);
                         addExtrusionsLayerToMap(style);
 
                         // Add the building layers since we know zoom levels in range
@@ -181,29 +187,81 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     }
                 });
 
-        Button buttonFifthLevel = findViewById(R.id.fifth_level_button);
+        buttonFifthLevel = findViewById(R.id.fifth_level_button);
         buttonFifthLevel.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+
                 indoorBuildingSource.setGeoJson(loadJsonFromAsset("fifth.geojson"));
+
+                if(!currLayer.equals("fifth_floor_new")){
+                    removeLayermine();
+                    mStyle.addLayer(new FillExtrusionLayer("fifth_floor_new", "indoor-building").withProperties(
+                            fillExtrusionColor(Color.rgb(129, 236, 236)),
+                            fillExtrusionOpacity(0.7f),
+                            fillExtrusionHeight((float)3)));
+                    currLayer="fifth_floor_new";
+                    DeactiveButton(currButton);
+                    currButton=buttonFifthLevel;
+                    ActivateButton(currButton);
+                }
             }
         });
 
-        Button buttonfourthLevel = findViewById(R.id.fourth_level_button);
+        buttonfourthLevel = findViewById(R.id.fourth_level_button);
         buttonfourthLevel.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 indoorBuildingSource.setGeoJson(loadJsonFromAsset("fourth.geojson"));
+                if(!currLayer.equals("fourth_floor_new")){
+                    removeLayermine();
+                    mStyle.addLayer(new FillExtrusionLayer("fourth_floor_new", "indoor-building").withProperties(
+                            fillExtrusionColor(Color.rgb(129, 236, 236)),
+                            fillExtrusionOpacity(0.7f),
+                            fillExtrusionHeight((float)3)));
+                    currLayer="fourth_floor_new";
+                    DeactiveButton(currButton);
+                    currButton=buttonfourthLevel;
+                    ActivateButton(currButton);
+                }
             }
         });
+    }
+    private void removeLayermine(){
+        if(currLayer!=null)
+        {
+            Layer layer=mapboxMap.getStyle().getLayer(currLayer);
+            if(layer!=null)
+            {
+              mStyle.removeLayer(layer);
+            }
+        }
+    }
+
+    private void ActivateButton(Button b){
+        b.setTextColor(Color.BLUE);
+        b.setBackgroundColor(Color.WHITE);
+    }
+
+    private void DeactiveButton(Button b){
+        b.setTextColor(Color.WHITE);
+        b.setBackgroundColor(Color.BLUE);
     }
 
     private void addExtrusionsLayerToMap(@NonNull Style loadedMapStyle) {
         // Add FillExtrusion layer to map using GeoJSON data
-        loadedMapStyle.addLayer(new FillExtrusionLayer("indoor-building", "indoor-building").withProperties(
-                fillExtrusionColor(Color.YELLOW),
+
+        /*loadedMapStyle.addLayer(new FillExtrusionLayer("fifth_floor_new", "indoor-building").withProperties(
+                fillExtrusionColor(Color.RED),
                 fillExtrusionOpacity(0.7f),
                 fillExtrusionHeight((float)3)));
+        */
+        loadedMapStyle.addLayer(new FillExtrusionLayer("fourth_floor_new", "indoor-building").withProperties(
+                fillExtrusionColor(Color.rgb(129, 236, 236)),
+                fillExtrusionOpacity(0.7f),
+                fillExtrusionHeight((float)3)));
+
+
     }
 
 
