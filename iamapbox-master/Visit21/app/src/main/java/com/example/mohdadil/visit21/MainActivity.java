@@ -12,6 +12,8 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.AlphaAnimation;
 import android.widget.Button;
@@ -21,6 +23,9 @@ import com.indooratlas.android.sdk.IALocation;
 import com.indooratlas.android.sdk.IALocationListener;
 import com.indooratlas.android.sdk.IALocationManager;
 import com.indooratlas.android.sdk.IALocationRequest;
+import com.indooratlas.android.sdk.IARoute;
+import com.indooratlas.android.sdk.IAWayfindingListener;
+import com.indooratlas.android.sdk.IAWayfindingRequest;
 import com.indooratlas.android.sdk.resources.IALocationListenerSupport;
 import com.mapbox.android.core.location.LocationEngine;
 import com.mapbox.android.core.permissions.PermissionsListener;
@@ -28,6 +33,8 @@ import com.mapbox.android.core.permissions.PermissionsManager;
 import com.mapbox.geojson.Point;
 import com.mapbox.geojson.Polygon;
 import com.mapbox.mapboxsdk.Mapbox;
+import com.mapbox.mapboxsdk.annotations.Polyline;
+import com.mapbox.mapboxsdk.annotations.PolylineOptions;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.location.LocationComponent;
@@ -91,6 +98,81 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private Button currButton;
     Button buttonFifthLevel;
     Button buttonfourthLevel;
+
+    private List<Polyline> mPolylines = new ArrayList<>();
+    private IARoute mCurrentRoute;
+
+    private int mFloor;
+    private IAWayfindingRequest mWayfindingDestination;
+
+    private IAWayfindingListener mWayfindingListener = new IAWayfindingListener() {
+        @Override
+        public void onWayfindingUpdate(IARoute route) {
+            mCurrentRoute = route;
+            if (hasArrivedToDestination(route)) {
+                // stop wayfinding
+                //  showInfo("You're there!");
+                mCurrentRoute = null;
+                mWayfindingDestination = null;
+                mIALocationManager.removeWayfindingUpdates();
+            }
+            updateRouteVisualization();
+        }
+    };
+
+
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.rr, menu);
+        // Action View
+        //MenuItem searchItem = menu.findItem(R.id.action_search);
+        //SearchView searchView = (SearchView) MenuItemCompat.getActionView(searchItem);
+        // Configure the search info and add any event listeners
+        //return super.onCreateOptionsMenu(menu);
+        return true;
+
+    }
+
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+
+        switch (item.getItemId()) {
+
+
+            case R.id.hod: {
+
+                mWayfindingDestination = new IAWayfindingRequest.Builder()
+                        .withFloor(4)
+                        .withLatitude(19.07606178)
+                        .withLongitude(72.99151853)
+                        .build();
+
+                mIALocationManager.requestWayfindingUpdates(mWayfindingDestination, mWayfindingListener);
+
+                break;
+            }
+
+
+            case R.id.toilet: {
+
+                mWayfindingDestination = new IAWayfindingRequest.Builder()
+                        .withFloor(4)
+                        .withLatitude(19.07600723)
+                        .withLongitude(72.99196862)
+                        .build();
+
+                mIALocationManager.requestWayfindingUpdates(mWayfindingDestination, mWayfindingListener);
+
+                break;
+            }
+
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+
     private IALocationListener mListener = new IALocationListenerSupport() {
 
         @Override
@@ -108,6 +190,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
 
             final LatLng center = new LatLng(location.getLatitude(), location.getLongitude());
+            final int newFloor = location.getFloorLevel();
+            if (mFloor != newFloor) {
+                updateRouteVisualization();
+            }
+            mFloor = newFloor;
 
             enableLocationComponent(mStyle);
 
@@ -142,7 +229,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void onMapReady(@NonNull MapboxMap mmapboxMap) {
         MainActivity.this.mapboxMap = mmapboxMap;
 
-        mapboxMap.setStyle(new Style.Builder().fromUrl("mapbox://styles/adil-khot/cjs6g8pwo2h021fr1w0wdhaeh"),
+        mapboxMap.setStyle(new Style.Builder().fromUrl("mapbox://styles/adil-khot/cjrs2yradf2g42tocp5czguq5"),
                 new Style.OnStyleLoaded() {
                     @Override
                     public void onStyleLoaded(@NonNull Style style) {
@@ -433,4 +520,68 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             return null;
         }
     }
+
+    private boolean hasArrivedToDestination(IARoute route) {
+        // empty routes are only returned when there is a problem, for example,
+        // missing or disconnected routing graph
+        if (route.getLegs().size() == 0) {
+            return false;
+        }
+
+        final double FINISH_THRESHOLD_METERS = 8.0;
+        double routeLength = 0;
+        for (IARoute.Leg leg : route.getLegs()) routeLength += leg.getLength();
+        return routeLength < FINISH_THRESHOLD_METERS;
+    }
+
+    /**
+     * Clear the visualizations for the wayfinding paths
+     */
+    private void clearRouteVisualization() {
+        for (Polyline pl : mPolylines) {
+            pl.remove();
+        }
+        mPolylines.clear();
+    }
+
+    /**
+     * Visualize the IndoorAtlas Wayfinding route on top of the Google Maps.
+     */
+    private void updateRouteVisualization() {
+
+        clearRouteVisualization();
+
+        if (mCurrentRoute == null) {
+            return;
+        }
+
+        for (IARoute.Leg leg : mCurrentRoute.getLegs()) {
+
+            if (leg.getEdgeIndex() == null) {
+                // Legs without an edge index are, in practice, the last and first legs of the
+                // route. They connect the destination or current location to the routing graph.
+                // All other legs travel along the edges of the routing graph.
+
+                // Omitting these "artificial edges" in visualization can improve the aesthetics
+                // of the route. Alternatively, they could be visualized with dashed lines.
+                continue;
+            }
+
+            PolylineOptions opt = new PolylineOptions();
+            opt.add(new LatLng(leg.getBegin().getLatitude(), leg.getBegin().getLongitude()));
+            opt.add(new LatLng(leg.getEnd().getLatitude(), leg.getEnd().getLongitude()));
+
+            // Here wayfinding path in different floor than current location is visualized in
+            // a semi-transparent color
+            if (leg.getBegin().getFloor() == mFloor && leg.getEnd().getFloor() == mFloor) {
+                opt.color(0xFF0000FF);
+            } else {
+                opt.color(0x300000FF);
+            }
+
+            mPolylines.add(mapboxMap.addPolyline(opt));
+        }
+    }
+
+
 }
