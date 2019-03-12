@@ -3,8 +3,8 @@
     {
       "type": "Feature",
       "properties": {
-        "name": "lab 1 4th floor",
-        "description": "lab 1",
+        "name": "AX-406",
+        "description": "COMPUTER LAB",
         "poi": "hardware",
         "selected": false
       },
