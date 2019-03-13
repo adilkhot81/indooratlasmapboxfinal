@@ -294,18 +294,48 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 {
                     indoorBuildingSource.setGeoJson(loadJsonFromAsset("second.geojson"));
                     featureCollection = FeatureCollection.fromJson(loadJsonFromAsset("second.geojson"));
+                    List<Feature> featureList = featureCollection.features();
+                    if(!mPoiList.isEmpty()){
+                        mPoiList.clear();
+                    }
+                    for (int i = 0; i < featureList.size(); i++) {
+                        if(featureList.get(i).hasProperty("name")){
+                            mPoiList.add(featureList.get(i).getStringProperty("name")+" : "+featureList.get(i).getStringProperty("description"));
+                        }
+                    }
+                    adapter.notifyDataSetChanged();
                     setupLayer();
                 }
                 if(n==3)
                 {
                     indoorBuildingSource.setGeoJson(loadJsonFromAsset("third.geojson"));
                     featureCollection = FeatureCollection.fromJson(loadJsonFromAsset("third.geojson"));
+                    List<Feature> featureList = featureCollection.features();
+                    if(!mPoiList.isEmpty()){
+                        mPoiList.clear();
+                    }
+                    for (int i = 0; i < featureList.size(); i++) {
+                        if(featureList.get(i).hasProperty("name")){
+                            mPoiList.add(featureList.get(i).getStringProperty("name")+" : "+featureList.get(i).getStringProperty("description"));
+                        }
+                    }
+                    adapter.notifyDataSetChanged();
                     setupLayer();
                 }
                 if(n==4)
                 {
                     indoorBuildingSource.setGeoJson(loadJsonFromAsset("fourth.geojson"));
                     featureCollection = FeatureCollection.fromJson(loadJsonFromAsset("fourth.geojson"));
+                    List<Feature> featureList = featureCollection.features();
+                    if(!mPoiList.isEmpty()){
+                        mPoiList.clear();
+                    }
+                    for (int i = 0; i < featureList.size(); i++) {
+                        if(featureList.get(i).hasProperty("name")){
+                            mPoiList.add(featureList.get(i).getStringProperty("name")+" : "+featureList.get(i).getStringProperty("description"));
+                        }
+                    }
+                    adapter.notifyDataSetChanged();
                     setupLayer();
                 }
 
@@ -314,6 +344,16 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
                     indoorBuildingSource.setGeoJson(loadJsonFromAsset("fifth.geojson"));
                     featureCollection = FeatureCollection.fromJson(loadJsonFromAsset("fifth.geojson"));
+                    List<Feature> featureList = featureCollection.features();
+                    if(!mPoiList.isEmpty()){
+                        mPoiList.clear();
+                    }
+                    for (int i = 0; i < featureList.size(); i++) {
+                        if(featureList.get(i).hasProperty("name")){
+                            mPoiList.add(featureList.get(i).getStringProperty("name")+" : "+featureList.get(i).getStringProperty("description"));
+                        }
+                    }
+                    adapter.notifyDataSetChanged();
                     setupLayer();
                 }
             }
